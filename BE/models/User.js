@@ -8,3 +8,5 @@ const UserSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("User", UserSchema);
+// Instructor tạo và xuất bản khóa học (Course.instructorId)
+// Student mua và theo học khóa học (Order.userId, Progress.userId)

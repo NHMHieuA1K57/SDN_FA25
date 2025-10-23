@@ -19,3 +19,15 @@ const OrderSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Order", OrderSchema);
+
+
+// Quan hệ:
+// userId → User._id (Student)
+// courseId → Course._id
+// instructorId → User._id (Instructor)
+// Luồng hoạt động:
+// Student chọn khóa học → tạo Order mới (trạng thái "Pending").
+// Khi thanh toán thành công → paymentStatus="Success", orderStatus="Completed".
+// Sau đó:
+// Thêm student vào Course.students[]
+// Thêm course vào StudentCourses.courses[]

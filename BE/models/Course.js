@@ -34,3 +34,13 @@ const CourseSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Course", CourseSchema);
+
+
+// Quan hệ:
+// instructorId → liên kết tới giảng viên (User)
+// students[].studentId → liên kết tới học viên (User)
+// curriculum[] → chứa nội dung học (lectureId, video URL,…)
+// Luồng logic:
+// Instructor tạo khóa học → lưu vào Course.
+// Khi student thanh toán thành công → thêm vào Course.students[].
+// Khi học viên học → cập nhật tiến độ tại Progress.
