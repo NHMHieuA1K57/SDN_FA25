@@ -76,7 +76,7 @@ function App() {
           path="course/details/:id"
           element={<StudentViewCourseDetailsPage />}
         />
-        <Route path="vnpay_return" element={<PaypalPaymentReturnPage />} />
+        <Route path="vnpay-return" element={<PaypalPaymentReturnPage />} />
         <Route path="student-courses" element={<StudentCoursesPage />} />
         <Route
           path="course-progress/:id"

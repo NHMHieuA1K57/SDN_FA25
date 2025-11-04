@@ -1,14 +1,28 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { CheckCircle, XCircle, Loader } from "lucide-react"; // Cần cài gói lucide-react
-import { Button } from "@/components/ui/button"; 
+import { CheckCircle, XCircle, Loader } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-// Giả định bạn có một service để xác nhận kết quả VNPay từ Backend
-// Hàm này sẽ gọi API Backend để Backend xác minh SecureHash và cập nhật DB.
-import { verifyVnpayPaymentService } from "@/services"; 
+import { verifyVnpayPaymentService } from "@/services";
 
-// --- Định nghĩa trạng thái hiển thị ---
+const RSP_CODE_MESSAGES = {
+  '00': "Thanh toán thành công! Khóa học của bạn đã được kích hoạt.",
+  '07': "Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường). Vui lòng liên hệ hỗ trợ.",
+  '09': "Thẻ/Tài khoản chưa đăng ký dịch vụ InternetBanking.",
+  '10': "Xác thực thông tin thẻ/tài khoản không đúng quá 3 lần.",
+  '11': "Đã hết hạn chờ thanh toán. Vui lòng thực hiện lại giao dịch.",
+  '12': "Thẻ/Tài khoản của khách hàng bị khóa.",
+  '13': "Quý khách nhập sai mật khẩu xác thực giao dịch (OTP).",
+  '24': "Khách hàng đã hủy giao dịch.",
+  '51': "Tài khoản của quý khách không đủ số dư để thực hiện giao dịch.",
+  '65': "Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày.",
+  '75': "Ngân hàng thanh toán đang bảo trì.",
+  '79': "KH nhập sai mật khẩu thanh toán quá số lần quy định.",
+  '99': "Lỗi không xác định. Vui lòng thử lại hoặc liên hệ hỗ trợ.",
+  'DEFAULT_FAIL': "Giao dịch thất bại hoặc đã xảy ra lỗi xác minh."
+};
+
 const STATUS = {
   LOADING: 'loading',
   SUCCESS: 'success',
@@ -22,47 +36,42 @@ function VnpayPaymentReturnPage() {
   const [message, setMessage] = useState("Đang xác minh giao dịch, vui lòng chờ...");
 
   useEffect(() => {
-    // 1. Lấy tất cả tham số query từ URL do VNPay gửi về
     const params = new URLSearchParams(location.search);
-    const vnpResponseCode = params.get("vnp_ResponseCode");
-    const vnpTxnRef = params.get("vnp_TxnRef"); // Order ID của bạn
-    
-    // Chuyển params thành object để gửi lên Backend
+    const vnpTxnRef = params.get("vnp_TxnRef");
+
     const vnpayData = Object.fromEntries(params.entries());
 
-    if (vnpTxnRef) {
-        async function verifyPayment() {
-            // Lấy Order ID ban đầu (để đảm bảo không bị thất lạc)
-            const currentOrderId = sessionStorage.getItem("currentOrderId");
-            
-            // 2. GỌI BACKEND XÁC MINH (Bảo mật)
-            // Backend sẽ kiểm tra SecureHash và cập nhật DB
-            try {
-                const response = await verifyVnpayPaymentService(vnpayData);
+    async function verifyPayment() {
+      try {
+        const response = await verifyVnpayPaymentService(vnpayData);
+        const rspCode = response?.rspCode;
+        const vnpMessage = RSP_CODE_MESSAGES[rspCode] || RSP_CODE_MESSAGES.DEFAULT_FAIL;
 
-                if (response?.success) {
-                    // Backend xác nhận Hash hợp lệ VÀ DB đã được cập nhật
-                    setPaymentStatus(STATUS.SUCCESS);
-                    setMessage("Thanh toán thành công! Khóa học đã được kích hoạt.");
-                    sessionStorage.removeItem("currentOrderId");
-                } else {
-                    // Backend xác minh hash thất bại HOẶC DB lỗi
-                    setPaymentStatus(STATUS.FAILED);
-                    setMessage(response?.message || "Giao dịch thất bại hoặc đã xảy ra lỗi xác minh.");
-                }
-            } catch (error) {
-                // Lỗi kết nối API
-                setPaymentStatus(STATUS.ERROR);
-                setMessage("Lỗi hệ thống: Không thể kết nối đến máy chủ xác minh.");
-            }
+        if (rspCode === "00") {
+          setPaymentStatus(STATUS.SUCCESS);
+          setMessage(vnpMessage);
+          sessionStorage.removeItem("currentOrderId");
+
+        } else {
+          setPaymentStatus(STATUS.FAILED);
+          setMessage(vnpMessage);
+
         }
-
-        verifyPayment();
-
-    } else {
-        // Trường hợp không có tham số VNPay (Lỗi truy cập trực tiếp)
+      } catch (error) {
+        const errorMessage = "Lỗi hệ thống: Không thể kết nối đến máy chủ xác minh.";
         setPaymentStatus(STATUS.ERROR);
-        setMessage("Lỗi: Không tìm thấy thông tin giao dịch VNPay.");
+        setMessage(errorMessage);
+
+      }
+    }
+
+    if (vnpTxnRef) {
+      verifyPayment();
+    } else {
+      const errorMessage = "Lỗi: Không tìm thấy thông tin giao dịch VNPay trong URL.";
+      setPaymentStatus(STATUS.ERROR);
+      setMessage(errorMessage);
+
     }
 
   }, [location.search]);
@@ -78,12 +87,10 @@ function VnpayPaymentReturnPage() {
 
 export default VnpayPaymentReturnPage;
 
-// --- Hàm Render Giao diện theo trạng thái ---
 const renderPaymentStatus = (status, msg) => {
   const isSuccess = status === STATUS.SUCCESS;
   const isFailed = status === STATUS.FAILED || status === STATUS.ERROR;
-  
-  // 🚀 Thiết kế giao diện đẹp hơn
+
   let IconComponent, title, color;
 
   if (status === STATUS.LOADING) {
@@ -102,19 +109,21 @@ const renderPaymentStatus = (status, msg) => {
 
   return (
     <div className="p-6 text-center">
-      <IconComponent className={`w-16 h-16 mx-auto mb-4 animate-spin-slow ${isSuccess ? 'animate-none' : ''} ${color}`} />
+      <IconComponent className={`w-16 h-16 mx-auto mb-4 ${status === STATUS.LOADING ? 'animate-spin' : ''} ${color}`} />
       <CardHeader className="p-0">
         <CardTitle className={`text-xl font-bold ${color}`}>{title}</CardTitle>
       </CardHeader>
       <CardContent className="mt-4 p-0">
         <p className="text-gray-600 mb-6">{msg}</p>
-        
-        <Button 
-          onClick={() => { window.location.href = isSuccess ? "/student-courses" : "/checkout"; }}
+
+        <Button
+          onClick={() => {
+            window.location.href = isSuccess ? "/student-courses" : "/home";
+          }}
           className={`w-full ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
           disabled={status === STATUS.LOADING}
         >
-          {isSuccess ? "Đến Khóa Học" : "Thử Lại Thanh Toán"}
+          {isSuccess ? "Đến Khóa Học Của Tôi" : "Thử Lại Thanh Toán"}
         </Button>
       </CardContent>
     </div>
