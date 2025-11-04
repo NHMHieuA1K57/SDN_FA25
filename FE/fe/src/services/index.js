@@ -105,7 +105,16 @@ export async function checkCoursePurchaseInfoService(courseId, studentId) {
 }
 
 export async function createPaymentService(formData) {
-  const { data } = await axiosInstance.post(`/student/order/create`, formData);
+  const { data } = await axiosInstance.post(`/payment/vnpay/create`, formData);
+
+  return data;
+}
+
+export async function verifyVnpayPaymentService(vnpayData) {
+  const { data } = await axiosInstance.post(
+    `/payment/vnpay/verify-return`,
+    vnpayData
+  );
 
   return data;
 }
