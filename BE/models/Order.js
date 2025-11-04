@@ -16,6 +16,12 @@ const OrderSchema = new mongoose.Schema({
   courseTitle: String,
   courseId: String,
   coursePricing: Number,
+  vnpTxnRef: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+
 });
 
 module.exports = mongoose.model("Order", OrderSchema);
