@@ -20,7 +20,7 @@ import {
 import { CheckCircle, Globe, Lock, PlayCircle } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-
+import { formatCurrencyVND } from "../../../utils/currencyFormatter.js";
 function StudentViewCourseDetailsPage() {
   const {
     studentViewCourseDetails,
@@ -107,9 +107,15 @@ function StudentViewCourseDetailsPage() {
 
   async function handleCreatePayment() {
     // 1. Kiểm tra dữ liệu cần thiết trước khi gửi yêu cầu
-    if (!auth?.user?._id || !studentViewCourseDetails?._id || !studentViewCourseDetails?.pricing) {
-        alert("Thông tin người dùng hoặc khóa học không đầy đủ. Vui lòng thử lại.");
-        return; // Dừng hàm nếu thiếu dữ liệu quan trọng
+    if (
+      !auth?.user?._id ||
+      !studentViewCourseDetails?._id ||
+      !studentViewCourseDetails?.pricing
+    ) {
+      alert(
+        "Thông tin người dùng hoặc khóa học không đầy đủ. Vui lòng thử lại."
+      );
+      return; // Dừng hàm nếu thiếu dữ liệu quan trọng
     }
 
     // Gán giá trị để tránh truy cập lặp lại
@@ -117,58 +123,62 @@ function StudentViewCourseDetailsPage() {
     const course = studentViewCourseDetails;
 
     // 2. Chuẩn bị Payload cho Backend
-   const paymentPayload = {
-        // --- Bắt buộc cho DB ---
-        userId: userId,
-        // 💡 Bổ sung: Tên người dùng
-        userName: auth?.user?.userName, 
-        // 💡 Bổ sung: Email người dùng
-        userEmail: auth?.user?.userEmail, 
-        // 💡 Bổ sung: Tên khóa học và ảnh (đã có trong course, nhưng cần thêm rõ ràng)
-        courseImage: course.image,
-        courseTitle: course.title,
-        
-        // --- Thông tin Khóa học và Giá ---
-        courseId: course._id,
-        instructorId: course.instructorId,
-        // Dùng tên trường Model để đảm bảo đúng kiểu dữ liệu
-        coursePricing: course.pricing, // Backend sẽ chuyển sang String nếu Model là String
-        
-        // --- Thông tin VNPay (Backend sẽ dùng để tạo URL) ---
-        amount: course.pricing, 
-        orderInfo: `Thanh toan khoa hoc: ${course.title}`, 
-        vnp_TxnRef: 'ORDER_' + Date.now(), // Mã tham chiếu tạm thời
-        
-        // --- Metadata cho DB (Backend sẽ override các trường này) ---
-        orderStatus: "pending", 
-        paymentMethod: "vnpay", 
+    const paymentPayload = {
+      // --- Bắt buộc cho DB ---
+      userId: userId,
+      // 💡 Bổ sung: Tên người dùng
+      userName: auth?.user?.userName,
+      // 💡 Bổ sung: Email người dùng
+      userEmail: auth?.user?.userEmail,
+      // 💡 Bổ sung: Tên khóa học và ảnh (đã có trong course, nhưng cần thêm rõ ràng)
+      courseImage: course.image,
+      courseTitle: course.title,
+
+      // --- Thông tin Khóa học và Giá ---
+      courseId: course._id,
+      instructorId: course.instructorId,
+      // Dùng tên trường Model để đảm bảo đúng kiểu dữ liệu
+      coursePricing: course.pricing, // Backend sẽ chuyển sang String nếu Model là String
+
+      // --- Thông tin VNPay (Backend sẽ dùng để tạo URL) ---
+      amount: course.pricing,
+      orderInfo: `Thanh toan khoa hoc: ${course.title}`,
+      vnp_TxnRef: "ORDER_" + Date.now(), // Mã tham chiếu tạm thời
+
+      // --- Metadata cho DB (Backend sẽ override các trường này) ---
+      orderStatus: "pending",
+      paymentMethod: "vnpay",
     };
 
-    console.log("Payload thanh toán chuẩn bị gửi lên Backend:", paymentPayload)
-    
+    console.log("Payload thanh toán chuẩn bị gửi lên Backend:", paymentPayload);
+
     // 3. Gọi API Backend
     try {
-        // 💡 Sử dụng hàm service đã sửa (nếu bạn dùng nó)
-        const response = await createPaymentService(paymentPayload);
-        if (response.success && response.data?.vnpayUrl) {
-            const { vnpayUrl, orderId } = response.data;
+      // 💡 Sử dụng hàm service đã sửa (nếu bạn dùng nó)
+      const response = await createPaymentService(paymentPayload);
+      if (response.success && response.data?.vnpayUrl) {
+        const { vnpayUrl, orderId } = response.data;
 
-            // 4. Lưu Order ID (ID được tạo/xác nhận từ Backend)
-            sessionStorage.setItem("currentOrderId", orderId); // Lưu string thay vì JSON.stringify
-            
-            // 5. Chuyển hướng người dùng sang Cổng VNPay
-            window.location.href = vnpayUrl; 
+        // 4. Lưu Order ID (ID được tạo/xác nhận từ Backend)
+        sessionStorage.setItem("currentOrderId", orderId); // Lưu string thay vì JSON.stringify
 
-        } else {
-            // Xử lý trường hợp API Backend thành công nhưng thiếu URL
-            alert("Lỗi: Backend không trả về URL thanh toán VNPay hợp lệ. " + (response.message || ''));
-        }
+        // 5. Chuyển hướng người dùng sang Cổng VNPay
+        window.location.href = vnpayUrl;
+      } else {
+        // Xử lý trường hợp API Backend thành công nhưng thiếu URL
+        alert(
+          "Lỗi: Backend không trả về URL thanh toán VNPay hợp lệ. " +
+            (response.message || "")
+        );
+      }
     } catch (error) {
-        console.error("Lỗi khi tạo yêu cầu VNPay:", error);
-        // Xử lý lỗi kết nối hoặc lỗi server 500
-        alert("Đã xảy ra lỗi hệ thống khi tạo yêu cầu thanh toán. Vui lòng thử lại.");
+      console.error("Lỗi khi tạo yêu cầu VNPay:", error);
+      // Xử lý lỗi kết nối hoặc lỗi server 500
+      alert(
+        "Đã xảy ra lỗi hệ thống khi tạo yêu cầu thanh toán. Vui lòng thử lại."
+      );
     }
-}
+  }
 
   useEffect(() => {
     if (displayCurrentVideoFreePreview !== null) setShowFreePreviewDialog(true);
@@ -298,7 +308,7 @@ function StudentViewCourseDetailsPage() {
               </div>
               <div className="mb-4">
                 <span className="text-3xl font-bold">
-                  ${studentViewCourseDetails?.pricing}
+                  {formatCurrencyVND(studentViewCourseDetails?.pricing)}
                 </span>
               </div>
               <Button onClick={handleCreatePayment} className="w-full">

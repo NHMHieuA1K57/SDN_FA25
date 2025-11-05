@@ -91,13 +91,13 @@ const handleVerifyVNPayReturn = async (req, res) => {
       order.paymentId = vnpData.vnp_TransactionNo;
       await order.save();
 
-      return res.status(200).json({ rspCode: '00', message: 'Success' });
+      return res.status(200).json({ rspCode: '00', message: 'success' });
     } else {
       order.orderStatus = "failed";
       order.paymentStatus = "failed";
       await order.save();
 
-      return res.status(200).json({ rspCode: '00', message: 'Success', Detail: 'Transaction Failed' });
+      return res.status(200).json({ rspCode: '99', message: 'failed', Detail: 'Transaction Failed' });
     }
   } catch (e) {
     console.error("Lỗi xử lý VNPay Return (Hệ thống):", e.message || e);

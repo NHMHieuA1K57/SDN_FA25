@@ -9,6 +9,7 @@ import {
 } from "../../../services";
 import { AuthContext } from "../../../context/auth-context";
 import { useNavigate } from "react-router-dom";
+import { formatCurrencyVND } from "../../../utils/currencyFormatter.js";
 
 function StudentHomePage() {
   const { studentViewCoursesList, setStudentViewCoursesList } =
@@ -86,11 +87,12 @@ function StudentHomePage() {
         </div>
       </section>
       <section className="py-12 px-4 lg:px-8">
-        <h2 className="text-2xl font-bold mb-6">Featured COourses</h2>
+        <h2 className="text-2xl font-bold mb-6">Featured Courses</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {studentViewCoursesList && studentViewCoursesList.length > 0 ? (
             studentViewCoursesList.map((courseItem) => (
               <div
+                key={courseItem?._id}
                 onClick={() => handleCourseNavigate(courseItem?._id)}
                 className="border rounded-lg overflow-hidden shadow cursor-pointer"
               >
@@ -106,7 +108,7 @@ function StudentHomePage() {
                     {courseItem?.instructorName}
                   </p>
                   <p className="font-bold text-[16px]">
-                    ${courseItem?.pricing}
+                    {formatCurrencyVND(courseItem?.pricing)}
                   </p>
                 </div>
               </div>
