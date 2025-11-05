@@ -1,20 +1,21 @@
-const { VNPay } = require('vnpay');
+const { VNPay } = require("vnpay");
 const Order = require("../../models/Order");
 
 const vnpayConfig = {
   tmnCode: process.env.VNPAY_TMNCODE,
   secureSecret: process.env.VNPAY_HASHSECRET,
-  testMode: process.env.NODE_ENV !== 'production',
+  testMode: process.env.NODE_ENV !== "production",
 };
 
 const vnpay = new VNPay(vnpayConfig);
-
 
 const handleCreateVNPayPayment = async (req, res) => {
   try {
     const { amount, orderInfo, userId, ...otherOrderDetails } = req.body;
     const now = new Date();
-    const ipAddr = req.headers["x-forwarded-for"]?.split(',').shift() || req.socket.remoteAddress;
+    const ipAddr =
+      req.headers["x-forwarded-for"]?.split(",").shift() ||
+      req.socket.remoteAddress;
 
     const newOrder = await Order.create({
       userId,
@@ -52,7 +53,6 @@ const handleCreateVNPayPayment = async (req, res) => {
   }
 };
 
-
 const handleVerifyVNPayReturn = async (req, res) => {
   try {
     const vnpData = req.body;
@@ -61,51 +61,63 @@ const handleVerifyVNPayReturn = async (req, res) => {
 
     if (!verification.isVerified) {
       console.error("LỖI BẢO MẬT: Chữ ký VNPay không hợp lệ.");
-      return res.status(200).json({ rspCode: '97', message: 'Invalid Signature' });
+      return res
+        .status(200)
+        .json({ rspCode: "97", message: "Invalid Signature" });
     }
-    console.log("Hash Verification: Thành công."); // 🎯 LOG 2
 
     const vnpTxnRef = vnpData.vnp_TxnRef;
 
     const order = await Order.findOne({ vnpTxnRef });
     if (!order) {
-      console.warn(`CẢNH BÁO: KHÔNG TÌM THẤY Order trong DB! vnpTxnRef: ${vnpTxnRef}`);
-      return res.status(200).json({ rspCode: '01', message: 'Order not found' });
+      console.warn(
+        `CẢNH BÁO: KHÔNG TÌM THẤY Order trong DB! vnpTxnRef: ${vnpTxnRef}`
+      );
+      return res
+        .status(200)
+        .json({ rspCode: "01", message: "Order not found" });
     }
 
     if (order.orderStatus !== "pending") {
-      return res.status(200).json({ rspCode: '02', message: 'Order already confirmed' });
+      return res
+        .status(200)
+        .json({ rspCode: "02", message: "Order already confirmed" });
     }
 
     const amountFromVnpay = Number(vnpData.vnp_Amount);
     const amountFromOrder = order.coursePricing * 100;
 
     if (amountFromOrder !== amountFromVnpay) {
-      console.error(`LỖI SỐ TIỀN: DB (${amountFromOrder}) KHÔNG KHỚP VNPay (${amountFromVnpay}).`);
-      return res.status(200).json({ rspCode: '04', message: 'Invalid amount' });
+      return res.status(200).json({ rspCode: "04", message: "Invalid amount" });
     }
 
-    if (vnpData.vnp_ResponseCode === "00" && vnpData.vnp_TransactionStatus === "00") {
+    const vnpResponseCode = vnpData.vnp_ResponseCode;
+    const vnpTransactionStatus = vnpData.vnp_TransactionStatus;
+
+    if (vnpResponseCode === "00" && vnpTransactionStatus === "00") {
       order.orderStatus = "paid";
       order.paymentStatus = "success";
       order.paymentId = vnpData.vnp_TransactionNo;
       await order.save();
 
-      return res.status(200).json({ rspCode: '00', message: 'success' });
+      return res.status(200).json({ rspCode: "00", message: "success" });
     } else {
       order.orderStatus = "failed";
       order.paymentStatus = "failed";
       await order.save();
 
-      return res.status(200).json({ rspCode: '99', message: 'failed', Detail: 'Transaction Failed' });
+      return res.status(200).json({
+        rspCode: vnpResponseCode || "99",
+        message: "Transaction Failed by VNPAY",
+      });
     }
   } catch (e) {
     console.error("Lỗi xử lý VNPay Return (Hệ thống):", e.message || e);
-    return res.status(200).json({ rspCode: '99', message: 'Unknown error' });
+    return res.status(200).json({ rspCode: "99", message: "Unknown error" });
   }
 };
 
 module.exports = {
   handleCreateVNPayPayment,
-  handleVerifyVNPayReturn
+  handleVerifyVNPayReturn,
 };
