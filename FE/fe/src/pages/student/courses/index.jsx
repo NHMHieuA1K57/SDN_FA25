@@ -20,7 +20,8 @@ import {
 import { ArrowUpDownIcon } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
+import { formatCurrencyVND } from "@/utils/currencyFormatter";
+import { getListCategory } from "@/services";
 function createSearchParamsHelper(filterParams) {
   const queryParams = [];
 
@@ -38,6 +39,8 @@ function createSearchParamsHelper(filterParams) {
 function StudentViewCoursesPage() {
   const [sort, setSort] = useState("price-lowtohigh");
   const [filters, setFilters] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     studentViewCoursesList,
@@ -123,7 +126,29 @@ function StudentViewCoursesPage() {
     };
   }, []);
 
-  console.log(loadingState, "loadingState");
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        setCategoriesLoading(true);
+        const response = await getListCategory();
+
+        if (response?.success && Array.isArray(response?.data)) {
+          const mapped = response.data.map((c) => ({
+            id: c._id ?? c.id,
+            label: c.name ?? c.label ?? c.title,
+          }));
+
+          setCategories(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching categories", err);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    }
+
+    loadCategories();
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -132,25 +157,37 @@ function StudentViewCoursesPage() {
         <aside className="w-full md:w-64 space-y-4">
           <div>
             {Object.keys(filterOptions).map((ketItem) => (
-              <div className="p-4 border-b">
+              <div className="p-4 border-b" key={ketItem}>
                 <h3 className="font-bold mb-3">{ketItem.toUpperCase()}</h3>
                 <div className="grid gap-2 mt-2">
-                  {filterOptions[ketItem].map((option) => (
-                    <Label className="flex font-medium items-center gap-3">
-                      <Checkbox
-                        checked={
-                          filters &&
-                          Object.keys(filters).length > 0 &&
-                          filters[ketItem] &&
-                          filters[ketItem].indexOf(option.id) > -1
-                        }
-                        onCheckedChange={() =>
-                          handleFilterOnChange(ketItem, option)
-                        }
-                      />
-                      {option.label}
-                    </Label>
-                  ))}
+                  {ketItem === "category" && categoriesLoading ? (
+                    <Skeleton />
+                  ) : (
+                    (ketItem === "category"
+                      ? categories.length
+                        ? categories
+                        : filterOptions[ketItem]
+                      : filterOptions[ketItem]
+                    ).map((option) => (
+                      <Label
+                        key={option.id}
+                        className="flex font-medium items-center gap-3"
+                      >
+                        <Checkbox
+                          checked={
+                            filters &&
+                            Object.keys(filters).length > 0 &&
+                            filters[ketItem] &&
+                            filters[ketItem].indexOf(option.id) > -1
+                          }
+                          onCheckedChange={() =>
+                            handleFilterOnChange(ketItem, option)
+                          }
+                        />
+                        {option.label}
+                      </Label>
+                    ))
+                  )}
                 </div>
               </div>
             ))}
@@ -222,7 +259,7 @@ function StudentViewCoursesPage() {
                         } - ${courseItem?.level.toUpperCase()} Level`}
                       </p>
                       <p className="font-bold text-lg">
-                        ${courseItem?.pricing}
+                        {formatCurrencyVND(courseItem?.pricing)}
                       </p>
                     </div>
                   </CardContent>

@@ -1,10 +1,11 @@
 const Course = require("../../models/Course");
+const Category = require("../../models/Category");
 const StudentCourses = require("../../models/StudentCourses");
 
 const getAllStudentViewCourses = async (req, res) => {
   try {
     const {
-      category = [],
+      category = "",
       level = [],
       primaryLanguage = [],
       sortBy = "price-lowtohigh",
@@ -13,8 +14,11 @@ const getAllStudentViewCourses = async (req, res) => {
     console.log(req.query, "req.query");
 
     let filters = {};
-    if (category.length) {
-      filters.category = { $in: category.split(",") };
+    if (category) {
+      const categoryDoc = await Category.findOne({ slug: category });
+      if (categoryDoc) {
+        filters.category = categoryDoc._id;
+      }
     }
     if (level.length) {
       filters.level = { $in: level.split(",") };
