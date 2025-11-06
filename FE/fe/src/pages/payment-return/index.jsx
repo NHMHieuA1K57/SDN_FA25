@@ -59,6 +59,7 @@ function VnpayPaymentReturnPage() {
           setPaymentStatus(STATUS.SUCCESS);
           setMessage(vnpMessage);
           sessionStorage.removeItem("currentOrderId");
+          sessionStorage.removeItem("currentCourseId");
         } else {
           setPaymentStatus(STATUS.FAILED);
           setMessage(vnpMessage);
@@ -123,29 +124,21 @@ const renderPaymentStatus = (status, msg) => {
 
   return (
     <div className="p-8 text-center bg-white rounded-xl">
-      {" "}
-      {/* Tăng padding và làm tròn góc */}
-      {/* 1. HIỂN THỊ BIỂU TƯỢNG */}
       <IconComponent
         className={`w-20 h-20 mx-auto mb-6 ${
-          // Biểu tượng lớn hơn
           isLoading ? "animate-spin" : ""
         } ${colorClass} transition-colors duration-300`}
       />
-      {/* 2. TIÊU ĐỀ KẾT QUẢ */}
       <CardHeader className="p-0 mb-4">
         <CardTitle className={`text-2xl font-extrabold ${colorClass}`}>
           {title}
         </CardTitle>
       </CardHeader>
-      {/* 3. THÔNG ĐIỆP CHI TIẾT */}
       <CardContent className="mt-4 p-0">
         <p className="text-gray-700 mb-6 font-medium">{msg}</p>
 
-        {/* Thêm đường phân cách nhẹ */}
         <div className="border-t border-gray-200 my-4"></div>
 
-        {/* 4. VĂN BẢN HỖ TRỢ */}
         {!isSuccess && !isLoading && (
           <p className="text-sm text-gray-500 mb-6">
             Bạn có thể kiểm tra lại thông tin hoặc liên hệ bộ phận hỗ trợ nếu
@@ -153,10 +146,19 @@ const renderPaymentStatus = (status, msg) => {
           </p>
         )}
 
-        {/* 5. NÚT HÀNH ĐỘNG */}
         <Button
           onClick={() => {
-            window.location.href = isSuccess ? "/student-courses" : "/home";
+            if (isSuccess) {
+              window.location.href = "/student-courses";
+              return;
+            }
+
+            const currentCourseId = sessionStorage.getItem("currentCourseId");
+            if (currentCourseId) {
+              window.location.href = `/course/details/${currentCourseId}`;
+            } else {
+              window.location.href = "/home";
+            }
           }}
           className={`w-full py-2 text-lg font-semibold transition-all duration-300 ${buttonColorClass}`}
           disabled={isLoading}

@@ -22,11 +22,10 @@ function StudentHomePage() {
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
-  function handleNavigateToCoursesPage(getCurrentId) {
-    console.log(getCurrentId);
+  function handleNavigateToCoursesPage(categoryItem) {
     sessionStorage.removeItem("filters");
     const currentFilter = {
-      category: [getCurrentId],
+      category: [categoryItem.slug],
     };
 
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
@@ -63,17 +62,15 @@ function StudentHomePage() {
       try {
         setCategoriesLoading(true);
         const response = await getListCategory();
-
-        if (response?.success && Array.isArray(response?.data)) {
-          const mapped = response.data.map((c) => ({
-            id: c._id ?? c.id,
-            label: c.name ?? c.label ?? c.title,
+        if (Array.isArray(response)) {
+          const mapped = response.map((c) => ({
+            id: c._id,
+            label: c.name,
+            slug: c.slug,
           }));
-
           setCategories(mapped);
         }
       } catch (err) {
-        console.error("Error fetching categories", err);
       } finally {
         setCategoriesLoading(false);
       }
@@ -112,7 +109,7 @@ function StudentHomePage() {
                   className="justify-start"
                   variant="outline"
                   key={categoryItem.id}
-                  onClick={() => handleNavigateToCoursesPage(categoryItem.id)}
+                  onClick={() => handleNavigateToCoursesPage(categoryItem)}
                 >
                   {categoryItem.label}
                 </Button>

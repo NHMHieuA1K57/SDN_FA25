@@ -2,7 +2,6 @@ const CourseProgress = require("../../models/CourseProgress");
 const Course = require("../../models/Course");
 const StudentCourses = require("../../models/StudentCourses");
 
-//mark current lecture as viewed
 const markCurrentLectureAsViewed = async (req, res) => {
   try {
     const { userId, courseId, lectureId } = req.body;
@@ -48,7 +47,6 @@ const markCurrentLectureAsViewed = async (req, res) => {
       });
     }
 
-    //check all the lectures are viewed or not
     const allLecturesViewed =
       progress.lecturesProgress.length === course.curriculum.length &&
       progress.lecturesProgress.every((item) => item.viewed);
@@ -74,7 +72,6 @@ const markCurrentLectureAsViewed = async (req, res) => {
   }
 };
 
-//get current course progress
 const getCurrentCourseProgress = async (req, res) => {
   try {
     const { userId, courseId } = req.params;
@@ -144,8 +141,6 @@ const getCurrentCourseProgress = async (req, res) => {
     });
   }
 };
-
-//reset course progress
 
 const resetCurrentCourseProgress = async (req, res) => {
   try {

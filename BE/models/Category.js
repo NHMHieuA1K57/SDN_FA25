@@ -13,9 +13,6 @@ const CategorySchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  icon: {
-    type: String,
-  },
   order: {
     type: Number,
     default: 0,
