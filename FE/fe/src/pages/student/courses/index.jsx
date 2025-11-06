@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +17,13 @@ import { StudentContext } from "@/context/student-context";
 import {
   checkCoursePurchaseInfoService,
   fetchStudentViewCourseListService,
+  getListCategory,
 } from "@/services";
-import { ArrowUpDownIcon } from "lucide-react";
+import { ArrowUpDownIcon, Search, X, Loader } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatCurrencyVND } from "@/utils/currencyFormatter";
-import { getListCategory } from "@/services";
+
 function createSearchParamsHelper(filterParams) {
   const queryParams = [];
 
@@ -41,7 +43,10 @@ function StudentViewCoursesPage() {
   const [filters, setFilters] = useState({});
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [, setSearchParams] = useSearchParams();
   const {
     studentViewCoursesList,
     setStudentViewCoursesList,
@@ -53,41 +58,34 @@ function StudentViewCoursesPage() {
 
   function handleFilterOnChange(getSectionId, getCurrentOption) {
     let cpyFilters = { ...filters };
-    const indexOfCurrentSeection =
-      Object.keys(cpyFilters).indexOf(getSectionId);
+    const valueToUse = getCurrentOption.slug || getCurrentOption.id;
+    const indexOfCurrentSeection = Object.keys(cpyFilters).indexOf(getSectionId);
 
-    console.log(indexOfCurrentSeection, getSectionId);
     if (indexOfCurrentSeection === -1) {
-      cpyFilters = {
-        ...cpyFilters,
-        [getSectionId]: [getCurrentOption.id],
-      };
-
-      console.log(cpyFilters);
+      cpyFilters = { ...cpyFilters, [getSectionId]: [valueToUse] };
     } else {
-      const indexOfCurrentOption = cpyFilters[getSectionId].indexOf(
-        getCurrentOption.id
-      );
-
-      if (indexOfCurrentOption === -1)
-        cpyFilters[getSectionId].push(getCurrentOption.id);
+      const indexOfCurrentOption = cpyFilters[getSectionId].indexOf(valueToUse);
+      if (indexOfCurrentOption === -1) cpyFilters[getSectionId].push(valueToUse);
       else cpyFilters[getSectionId].splice(indexOfCurrentOption, 1);
     }
-
     setFilters(cpyFilters);
     sessionStorage.setItem("filters", JSON.stringify(cpyFilters));
   }
 
-  async function fetchAllStudentViewCourses(filters, sort) {
+  async function fetchAllStudentViewCourses(filters, sort, search = "") {
+    setLoadingState(true);
     const query = new URLSearchParams({
       ...filters,
       sortBy: sort,
+      ...(search ? { search } : {}),
     });
     const response = await fetchStudentViewCourseListService(query);
     if (response?.success) {
       setStudentViewCoursesList(response?.data);
-      setLoadingState(false);
+    } else {
+      setStudentViewCoursesList([]);
     }
+    setLoadingState(false);
   }
 
   async function handleCourseNavigate(getCurrentCourseId) {
@@ -107,7 +105,9 @@ function StudentViewCoursesPage() {
 
   useEffect(() => {
     const buildQueryStringForFilters = createSearchParamsHelper(filters);
-    setSearchParams(new URLSearchParams(buildQueryStringForFilters));
+    setSearchParams(new URLSearchParams(buildQueryStringForFilters), {
+      replace: true,
+    });
   }, [filters]);
 
   useEffect(() => {
@@ -116,9 +116,16 @@ function StudentViewCoursesPage() {
   }, []);
 
   useEffect(() => {
-    if (filters !== null && sort !== null)
-      fetchAllStudentViewCourses(filters, sort);
+    if (filters !== null && sort !== null) {
+      fetchAllStudentViewCourses(filters, sort, searchQuery);
+    }
   }, [filters, sort]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
+  }, [searchTimeout]);
 
   useEffect(() => {
     return () => {
@@ -131,44 +138,102 @@ function StudentViewCoursesPage() {
       try {
         setCategoriesLoading(true);
         const response = await getListCategory();
-
-        if (response?.success && Array.isArray(response?.data)) {
-          const mapped = response.data.map((c) => ({
-            id: c._id ?? c.id,
-            label: c.name ?? c.label ?? c.title,
-          }));
-
-          setCategories(mapped);
-        }
+        let categoriesData = [];
+        if (Array.isArray(response)) categoriesData = response;
+        else if (response?.data && Array.isArray(response.data)) categoriesData = response.data;
+        const mapped = categoriesData.map((c) => ({ id: c._id, label: c.name, slug: c.slug }));
+        setCategories(mapped);
       } catch (err) {
         console.error("Error fetching categories", err);
       } finally {
         setCategoriesLoading(false);
       }
     }
-
     loadCategories();
   }, []);
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4">All Courses</h1>
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search courses, topics or instructors..."
+            value={searchQuery}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchQuery(value);
+              if (searchTimeout) clearTimeout(searchTimeout);
+              const timeoutId = setTimeout(async () => {
+                try {
+                  setIsSearching(true);
+                  await fetchAllStudentViewCourses(filters, sort, value);
+                } finally {
+                  setIsSearching(false);
+                }
+              }, 500);
+              setSearchTimeout(timeoutId);
+            }}
+            className="w-full pl-10 pr-10"
+          />
+          {searchQuery && (
+            <button
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                setSearchQuery("");
+                fetchAllStudentViewCourses(filters, sort, "");
+              }}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {isSearching && (
+            <div className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-500">
+              <Loader className="h-4 w-4 animate-spin" />
+            </div>
+          )}
+        </div>
+      </div>
       <div className="flex flex-col md:flex-row gap-4">
         <aside className="w-full md:w-64 space-y-4">
           <div>
-            {Object.keys(filterOptions).map((ketItem) => (
-              <div className="p-4 border-b" key={ketItem}>
-                <h3 className="font-bold mb-3">{ketItem.toUpperCase()}</h3>
+            {Object.keys(filterOptions).map((keyItem) => (
+              <div className="p-4 border-b" key={keyItem}>
+                <h3 className="font-bold mb-3">{keyItem.toUpperCase()}</h3>     
                 <div className="grid gap-2 mt-2">
-                  {ketItem === "category" && categoriesLoading ? (
-                    <Skeleton />
+                  {keyItem === "category" ? (
+                    categoriesLoading ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : categories.length > 0 ? (
+                      categories.map((option) => (
+                        <Label
+                          key={option.slug}
+                          className="flex font-medium items-center gap-3"
+                        >
+                          <Checkbox
+                            checked={
+                              filters &&
+                              filters[keyItem] &&
+                              filters[keyItem].indexOf(option.slug) > -1
+                            }
+                            onCheckedChange={() =>
+                              handleFilterOnChange(keyItem, option)
+                            }
+                          />
+                          {option.label}             
+                        </Label>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No categories found.
+                      </p>
+                    )
                   ) : (
-                    (ketItem === "category"
-                      ? categories.length
-                        ? categories
-                        : filterOptions[ketItem]
-                      : filterOptions[ketItem]
-                    ).map((option) => (
+                    filterOptions[keyItem].map((option) => (
                       <Label
                         key={option.id}
                         className="flex font-medium items-center gap-3"
@@ -176,15 +241,14 @@ function StudentViewCoursesPage() {
                         <Checkbox
                           checked={
                             filters &&
-                            Object.keys(filters).length > 0 &&
-                            filters[ketItem] &&
-                            filters[ketItem].indexOf(option.id) > -1
+                            filters[keyItem] &&
+                            filters[keyItem].indexOf(option.id) > -1
                           }
                           onCheckedChange={() =>
-                            handleFilterOnChange(ketItem, option)
+                            handleFilterOnChange(keyItem, option)
                           }
                         />
-                        {option.label}
+                                                {option.label}                 
                       </Label>
                     ))
                   )}
@@ -193,8 +257,9 @@ function StudentViewCoursesPage() {
             ))}
           </div>
         </aside>
+        {/* === MAIN CONTENT === */}
         <main className="flex-1">
-          <div className="flex justify-end items-center mb-4 gap-5">
+                <div className="flex justify-end items-center mb-4 gap-5">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -222,53 +287,45 @@ function StudentViewCoursesPage() {
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="text-sm text-black font-bold">
-              {studentViewCoursesList.length} Results
-            </span>
+            <span className="text-sm text-black font-bold">{studentViewCoursesList.length} Results</span>
           </div>
           <div className="space-y-4">
-            {studentViewCoursesList && studentViewCoursesList.length > 0 ? (
-              studentViewCoursesList.map((courseItem) => (
-                <Card
-                  onClick={() => handleCourseNavigate(courseItem?._id)}
-                  className="cursor-pointer"
-                  key={courseItem?._id}
-                >
-                  <CardContent className="flex gap-4 p-4">
-                    <div className="w-48 h-32 flex-shrink-0">
-                      <img
-                        src={courseItem?.image}
-                        className="w-ful h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">
-                        {courseItem?.title}
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 mb-1">
-                        Created By{" "}
-                        <span className="font-bold">
-                          {courseItem?.instructorName}
-                        </span>
-                      </p>
-                      <p className="text-[16px] text-gray-600 mt-3 mb-2">
-                        {`${courseItem?.curriculum?.length} ${
-                          courseItem?.curriculum?.length <= 1
-                            ? "Lecture"
-                            : "Lectures"
-                        } - ${courseItem?.level.toUpperCase()} Level`}
-                      </p>
-                      <p className="font-bold text-lg">
-                        {formatCurrencyVND(courseItem?.pricing)}
-                      </p>
+            {loadingState ? (
+              [...Array(3)].map((_, index) => (
+                <Card key={index} className="p-4">
+                  <CardContent className="flex gap-4 p-0">
+                    <Skeleton className="w-48 h-32 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-5 w-1/4" />
                     </div>
                   </CardContent>
                 </Card>
               ))
-            ) : loadingState ? (
-              <Skeleton />
+            ) : studentViewCoursesList && studentViewCoursesList.length > 0 ? (
+              studentViewCoursesList.map((courseItem) => (
+                <Card onClick={() => handleCourseNavigate(courseItem?._id)} className="cursor-pointer" key={courseItem?._id}>
+                  <CardContent className="flex gap-4 p-4">
+                    <div className="w-48 h-32 flex-shrink-0">
+                      <img src={courseItem?.image} className="w-full h-full object-cover rounded" />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-xl mb-2">{courseItem?.title}</CardTitle>
+                      <p className="text-sm text-gray-600 mb-1">
+                        Created By <span className="font-bold">{courseItem?.instructorName}</span>
+                      </p>
+                      <p className="text-[16px] text-gray-600 mt-3 mb-2">
+                        {`${courseItem?.curriculum?.length} ${courseItem?.curriculum?.length <= 1 ? "Lecture" : "Lectures"} - ${courseItem?.level.toUpperCase()} Level`}
+                      </p>
+                      <p className="font-bold text-lg text-primary">{formatCurrencyVND(courseItem?.pricing)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             ) : (
-              <h1 className="font-extrabold text-4xl">No Courses Found</h1>
+              <h1 className="font-extrabold text-4xl text-center mt-10 text-gray-700">No Courses Found</h1>
             )}
           </div>
         </main>
