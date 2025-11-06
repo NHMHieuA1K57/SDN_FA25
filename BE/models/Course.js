@@ -12,7 +12,10 @@ const CourseSchema = new mongoose.Schema({
   instructorName: String,
   date: Date,
   title: String,
-  category: String,
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+  },
   level: String,
   primaryLanguage: String,
   subtitle: String,

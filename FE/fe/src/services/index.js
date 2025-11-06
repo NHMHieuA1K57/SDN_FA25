@@ -46,6 +46,12 @@ export async function fetchInstructorCourseListService() {
   return data;
 }
 
+export async function getListCategory() {
+  const { data } = await axiosInstance.get(`/categories`);
+
+  return data;
+}
+
 export async function addNewCourseService(formData) {
   const { data } = await axiosInstance.post(`/instructor/course/add`, formData);
 
