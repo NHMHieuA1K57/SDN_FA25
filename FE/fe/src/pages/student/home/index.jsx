@@ -1,7 +1,7 @@
 import { courseCategories } from "../../../config";
 import banner from "../../../../public/banner-img.png";
 import { Button } from "../../../components/ui/button.jsx";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { StudentContext } from "../../../context/student-context";
 import {
   checkCoursePurchaseInfoService,
@@ -10,12 +10,17 @@ import {
 import { AuthContext } from "../../../context/auth-context";
 import { useNavigate } from "react-router-dom";
 import { formatCurrencyVND } from "../../../utils/currencyFormatter.js";
+import { getListCategory } from "../../../services";
+import { Skeleton } from "../../../components/ui/skeleton.jsx";
 
 function StudentHomePage() {
   const { studentViewCoursesList, setStudentViewCoursesList } =
     useContext(StudentContext);
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   function handleNavigateToCoursesPage(getCurrentId) {
     console.log(getCurrentId);
@@ -53,6 +58,30 @@ function StudentHomePage() {
     fetchAllStudentViewCourses();
   }, []);
 
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        setCategoriesLoading(true);
+        const response = await getListCategory();
+
+        if (response?.success && Array.isArray(response?.data)) {
+          const mapped = response.data.map((c) => ({
+            id: c._id ?? c.id,
+            label: c.name ?? c.label ?? c.title,
+          }));
+
+          setCategories(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching categories", err);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    }
+
+    loadCategories();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <section className="flex flex-col lg:flex-row items-center justify-between py-8 px-4 lg:px-8">
@@ -74,16 +103,22 @@ function StudentHomePage() {
       <section className="py-8 px-4 lg:px-8 bg-gray-100">
         <h2 className="text-2xl font-bold mb-6">Course Categories</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {courseCategories.map((categoryItem) => (
-            <Button
-              className="justify-start"
-              variant="outline"
-              key={categoryItem.id}
-              onClick={() => handleNavigateToCoursesPage(categoryItem.id)}
-            >
-              {categoryItem.label}
-            </Button>
-          ))}
+          {categoriesLoading ? (
+            <Skeleton className="h-10 w-full col-span-4" />
+          ) : (
+            (categories.length ? categories : courseCategories).map(
+              (categoryItem) => (
+                <Button
+                  className="justify-start"
+                  variant="outline"
+                  key={categoryItem.id}
+                  onClick={() => handleNavigateToCoursesPage(categoryItem.id)}
+                >
+                  {categoryItem.label}
+                </Button>
+              )
+            )
+          )}
         </div>
       </section>
       <section className="py-12 px-4 lg:px-8">
