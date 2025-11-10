@@ -122,7 +122,7 @@ function StudentProfilePage() {
       });
     }
   };
-
+//Password change handler
   const handleChangePassword = async () => {
     if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
       toast({
