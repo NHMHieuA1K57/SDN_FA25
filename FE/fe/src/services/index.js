@@ -179,3 +179,22 @@ export async function resetCourseProgressService(userId, courseId) {
 
   return data;
 }
+
+export async function changePasswordService(userId, oldPassword, newPassword) {
+  const { data } = await axiosInstance.post("/auth/change-password", {
+    userId,
+    oldPassword,
+    newPassword,
+  });
+
+  return data;
+}
+
+export async function updateUserProfileService(userId, userName) {
+  const { data } = await axiosInstance.post("/auth/update-profile", {
+    userId,
+    userName,
+  });
+
+  return data;
+}
