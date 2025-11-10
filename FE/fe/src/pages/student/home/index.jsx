@@ -23,18 +23,20 @@ function StudentHomePage() {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   function handleNavigateToCoursesPage(categoryItem) {
+    
     sessionStorage.removeItem("filters");
     const currentFilter = {
-      category: [categoryItem.slug],
+      category: [categoryItem.id],
     };
-
+    console.log(currentFilter,categoryItem)
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
-
     navigate("/courses");
   }
 
   async function fetchAllStudentViewCourses() {
     const response = await fetchStudentViewCourseListService();
+    console.log(response);
+    
     if (response?.success) setStudentViewCoursesList(response?.data);
   }
 
@@ -46,6 +48,7 @@ function StudentHomePage() {
 
     if (response?.success) {
       if (response?.data) {
+        console.log("Navigate to course progress");
         navigate(`/course-progress/${getCurrentCourseId}`);
       } else {
         navigate(`/course/details/${getCurrentCourseId}`);

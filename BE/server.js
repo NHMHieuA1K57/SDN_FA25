@@ -11,6 +11,7 @@ const studentCoursesRoutes = require("./routes/student-routes/student-courses-ro
 const studentCourseProgressRoutes = require("./routes/student-routes/course-progress-routes");
 const paymentRoutes = require("./routes/payment-routes/payment.route");
 const categoryRoutes = require("./routes/category-routes/category-routes");
+const StudentCourses = require("./models/StudentCourses");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +43,24 @@ app.use("/student/courses-bought", studentCoursesRoutes);
 app.use("/student/course-progress", studentCourseProgressRoutes);
 app.use("/payment/", paymentRoutes);
 app.use("/categories", categoryRoutes);
+app.use("/test", async (req, res) => {
+  const tes = {
+    userId: '68f7b4ede7f81ff190eae0dd',
+    courses: [
+      {
+        courseId: "68f9c6a19aecac623a88c33e",
+        title: "Fullstack Web Development Bootcamp",
+        instructorId: "671f1a001122334455667701",
+        instructorName: "Alice Nguyen",
+        dateOfPurchase: "2025-10-01T09:00:00.000Z",
+        courseImage: "https://example.com/images/fullstack-course.jpg",
+      },
+    ],
+  }
+  const tessv = new StudentCourses(tes);
+  await tessv.save();
+  res.send("This is a test route");
+});
 
 app.use((err, req, res, next) => {
   console.log(err.stack);
