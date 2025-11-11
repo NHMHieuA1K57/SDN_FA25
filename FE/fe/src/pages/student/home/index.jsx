@@ -23,20 +23,17 @@ function StudentHomePage() {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   function handleNavigateToCoursesPage(categoryItem) {
-    
     sessionStorage.removeItem("filters");
     const currentFilter = {
       category: [categoryItem.slug],
     };
-    console.log(currentFilter,categoryItem)
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
     navigate("/courses");
   }
 
   async function fetchAllStudentViewCourses() {
     const response = await fetchStudentViewCourseListService();
-    console.log(response);
-    
+
     if (response?.success) setStudentViewCoursesList(response?.data);
   }
 
@@ -74,6 +71,7 @@ function StudentHomePage() {
           setCategories(mapped);
         }
       } catch (err) {
+        console.error("Error loading categories:", err);
       } finally {
         setCategoriesLoading(false);
       }
