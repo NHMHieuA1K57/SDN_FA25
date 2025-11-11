@@ -21,22 +21,9 @@ import {
 } from "@/services";
 import { ArrowUpDownIcon, Search, X, Loader } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { formatCurrencyVND } from "@/utils/currencyFormatter";
 
-function createSearchParamsHelper(filterParams) {
-  const queryParams = [];
-
-  for (const [key, value] of Object.entries(filterParams)) {
-    if (Array.isArray(value) && value.length > 0) {
-      const paramValue = value.join(",");
-
-      queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
-    }
-  }
-
-  return queryParams.join("&");
-}
 
 function StudentViewCoursesPage() {
   const [sort, setSort] = useState("price-lowtohigh");
@@ -46,7 +33,6 @@ function StudentViewCoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTimeout, setSearchTimeout] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [, setSearchParams] = useSearchParams();
   const {
     studentViewCoursesList,
     setStudentViewCoursesList,
@@ -102,13 +88,6 @@ function StudentViewCoursesPage() {
       }
     }
   }
-
-  useEffect(() => {
-    const buildQueryStringForFilters = createSearchParamsHelper(filters);
-    setSearchParams(new URLSearchParams(buildQueryStringForFilters), {
-      replace: true,
-    });
-  }, [filters]);
 
   useEffect(() => {
     setSort("price-lowtohigh");
