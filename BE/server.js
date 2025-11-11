@@ -12,6 +12,8 @@ const studentCourseProgressRoutes = require("./routes/student-routes/course-prog
 const paymentRoutes = require("./routes/payment-routes/payment.route");
 const categoryRoutes = require("./routes/category-routes/category-routes");
 const StudentCourses = require("./models/StudentCourses");
+const adminCourseRoutes = require("./routes/adminCourse.route");
+const revenueRoutes = require("./routes/revenue.route");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +47,8 @@ app.use("/student/courses-bought", studentCoursesRoutes);
 app.use("/student/course-progress", studentCourseProgressRoutes);
 app.use("/payment/", paymentRoutes);
 app.use("/categories", categoryRoutes);
+app.use("/api/admin/courses", adminCourseRoutes);
+app.use("/api/admin/revenue", revenueRoutes);
 app.use("/test", async (req, res) => {
   const tes = {
     userId: '68f7b4ede7f81ff190eae0dd',
