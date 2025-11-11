@@ -1,11 +1,11 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const mongoose = require('mongoose');
 
 // load StudentCourses model
 const StudentCourses = require(path.join(__dirname, '..', 'models', 'StudentCourses'));
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/sdn_dev';
+const MONGO_URI = process.env.MONGO_URI;
 
 async function seed() {
   console.log('Connecting to MongoDB...');
@@ -16,7 +16,7 @@ async function seed() {
 
   const studentCourses = [
     {
-      userId: '690a28cf0432c174a63fc785', // Using the provided ObjectId
+      userId: '690b00101319d74a78c08303', // Using the provided ObjectId
       courses: [
         {
           courseId: 'course_01',
