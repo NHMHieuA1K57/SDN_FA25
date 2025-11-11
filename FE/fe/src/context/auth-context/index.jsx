@@ -231,6 +231,20 @@ export default function AuthProvider({ children }) {
     });
   }
 
+  async function refreshUserData() {
+    try {
+      const data = await checkAuthService();
+      if (data.success) {
+        setAuth({
+          authenticate: true,
+          user: data.data.user,
+        });
+      }
+    } catch (error) {
+      console.log("Error refreshing user data:", error);
+    }
+  }
+
   useEffect(() => {
     checkAuthUser();
   }, []);
@@ -246,6 +260,7 @@ export default function AuthProvider({ children }) {
         handleLoginUser,
         auth,
         resetCredentials,
+        refreshUserData,
       }}
     >
       {loading ? <Skeleton /> : children}

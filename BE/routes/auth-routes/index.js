@@ -2,6 +2,8 @@ const express = require("express");
 const {
   registerUser,
   loginUser,
+  changePassword,
+  updateUserProfile,
 } = require("../../controllers/auth-controller/index");
 const authenticateMiddleware = require("../../middleware/auth-middleware");
 const router = express.Router();
@@ -19,5 +21,7 @@ router.get("/check-auth", authenticateMiddleware, (req, res) => {
     },
   });
 });
+router.post("/change-password", changePassword);
+router.post("/update-profile", updateUserProfile);
 
 module.exports = router;

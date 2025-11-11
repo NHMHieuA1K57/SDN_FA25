@@ -13,6 +13,7 @@ import StudentViewCourseDetailsPage from "./pages/student/course-details";
 import PaypalPaymentReturnPage from "./pages/payment-return";
 import StudentCoursesPage from "./pages/student/student-courses";
 import StudentViewCourseProgressPage from "./pages/student/course-progress";
+import StudentProfilePage from "./pages/student/profile";
 
 function App() {
   const { auth } = useContext(AuthContext);
@@ -60,7 +61,7 @@ function App() {
         }
       />
       <Route
-        path="/"
+        path=""
         element={
           <RouteGuard
             element={<StudentViewCommonLayout />}
@@ -82,6 +83,7 @@ function App() {
           path="course-progress/:id"
           element={<StudentViewCourseProgressPage />}
         />
+        <Route path="profile" element={<StudentProfilePage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

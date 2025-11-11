@@ -2,6 +2,7 @@ const Category = require("../../models/Category");
 
 exports.getAllCategories = async (req, res) => {
   try {
+    console.log("Fetching all categories");
     const categories = await Category.find({ status: "active" }).sort({
       order: 1,
     });

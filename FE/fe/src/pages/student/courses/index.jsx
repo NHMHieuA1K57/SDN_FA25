@@ -80,6 +80,7 @@ function StudentViewCoursesPage() {
       ...(search ? { search } : {}),
     });
     const response = await fetchStudentViewCourseListService(query);
+    console.log("Fetched courses with filters:", filters, "sort:", sort, "search:", search, "response:", response);
     if (response?.success) {
       setStudentViewCoursesList(response?.data);
     } else {
@@ -138,6 +139,7 @@ function StudentViewCoursesPage() {
       try {
         setCategoriesLoading(true);
         const response = await getListCategory();
+        console.log("Categories response:", response);
         let categoriesData = [];
         if (Array.isArray(response)) categoriesData = response;
         else if (response?.data && Array.isArray(response.data)) categoriesData = response.data;
@@ -152,6 +154,7 @@ function StudentViewCoursesPage() {
     loadCategories();
   }, []);
 
+  console.log("studentViewCoursesList: ", studentViewCoursesList);
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4">All Courses</h1>
@@ -203,7 +206,7 @@ function StudentViewCoursesPage() {
           <div>
             {Object.keys(filterOptions).map((keyItem) => (
               <div className="p-4 border-b" key={keyItem}>
-                <h3 className="font-bold mb-3">{keyItem.toUpperCase()}</h3>     
+                <h3 className="font-bold mb-3">{keyItem.toUpperCase()}</h3>
                 <div className="grid gap-2 mt-2">
                   {keyItem === "category" ? (
                     categoriesLoading ? (
@@ -224,7 +227,7 @@ function StudentViewCoursesPage() {
                               handleFilterOnChange(keyItem, option)
                             }
                           />
-                          {option.label}             
+                          {option.label}
                         </Label>
                       ))
                     ) : (
@@ -248,7 +251,7 @@ function StudentViewCoursesPage() {
                             handleFilterOnChange(keyItem, option)
                           }
                         />
-                                                {option.label}                 
+                       {option.label}
                       </Label>
                     ))
                   )}

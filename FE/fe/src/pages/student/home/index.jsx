@@ -25,16 +25,15 @@ function StudentHomePage() {
   function handleNavigateToCoursesPage(categoryItem) {
     sessionStorage.removeItem("filters");
     const currentFilter = {
-      category: [categoryItem.slug],
+      category: [categoryItem.id],
     };
-
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
-
     navigate("/courses");
   }
 
   async function fetchAllStudentViewCourses() {
     const response = await fetchStudentViewCourseListService();
+
     if (response?.success) setStudentViewCoursesList(response?.data);
   }
 
@@ -46,6 +45,7 @@ function StudentHomePage() {
 
     if (response?.success) {
       if (response?.data) {
+        console.log("Navigate to course progress");
         navigate(`/course-progress/${getCurrentCourseId}`);
       } else {
         navigate(`/course/details/${getCurrentCourseId}`);
@@ -71,6 +71,7 @@ function StudentHomePage() {
           setCategories(mapped);
         }
       } catch (err) {
+        console.error("Error loading categories:", err);
       } finally {
         setCategoriesLoading(false);
       }
