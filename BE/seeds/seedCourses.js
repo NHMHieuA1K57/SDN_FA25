@@ -1,12 +1,12 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const mongoose = require('mongoose');
 
 // load models
 const Course = require(path.join(__dirname, '..', 'models', 'Course'));
 const Category = require(path.join(__dirname, '..', 'models', 'Category'));
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/sdn_dev';
+const MONGO_URI = process.env.MONGO_URI;
 
 async function seed() {
   console.log('Connecting to MongoDB...');
