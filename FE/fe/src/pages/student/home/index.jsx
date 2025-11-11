@@ -26,7 +26,7 @@ function StudentHomePage() {
     
     sessionStorage.removeItem("filters");
     const currentFilter = {
-      category: [categoryItem.id],
+      category: [categoryItem.slug],
     };
     console.log(currentFilter,categoryItem)
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
