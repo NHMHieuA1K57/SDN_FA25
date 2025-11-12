@@ -20,7 +20,7 @@ function StudentViewCommonHeader() {
   function handleLogout() {
     resetCredentials();
     sessionStorage.clear();
-    navigate("/auth");
+    navigate("/auth/login");
   }
 
   function handleProfileClick() {
