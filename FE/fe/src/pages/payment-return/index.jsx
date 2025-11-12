@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { CheckCircle, XCircle, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -8,22 +8,22 @@ import { verifyVnpayPaymentService } from "@/services";
 
 const RSP_CODE_MESSAGES = {
   "00": "Thanh toán thành công! Khóa học của bạn đã được kích hoạt.",
-  "97": "Lỗi bảo mật: Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.",
+  97: "Lỗi bảo mật: Chữ ký giao dịch không hợp lệ. Vui lòng liên hệ hỗ trợ.",
   "01": "Lỗi hệ thống: Không tìm thấy đơn hàng tương ứng. Vui lòng liên hệ hỗ trợ.",
   "02": "Giao dịch đã xử lý",
   "04": "Lỗi hệ thống: Số tiền thanh toán không khớp với đơn hàng. Vui lòng liên hệ hỗ trợ.",
   "07": "Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường). Vui lòng liên hệ hỗ trợ.",
   "09": "Thẻ/Tài khoản chưa đăng ký dịch vụ InternetBanking.",
-  "10": "Xác thực thông tin thẻ/tài khoản không đúng quá 3 lần.",
-  "11": "Đã hết hạn chờ thanh toán. Vui lòng thực hiện lại giao dịch.",
-  "12": "Thẻ/Tài khoản của khách hàng bị khóa.",
-  "13": "Quý khách nhập sai mật khẩu xác thực giao dịch (OTP).",
-  "24": "Khách hàng đã hủy giao dịch.",
-  "51": "Tài khoản của quý khách không đủ số dư để thực hiện giao dịch.",
-  "65": "Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày.",
-  "75": "Ngân hàng thanh toán đang bảo trì.",
-  "79": "KH nhập sai mật khẩu thanh toán quá số lần quy định.",
-  "99": "Lỗi không xác định. Vui lòng thử lại hoặc liên hệ hỗ trợ.",
+  10: "Xác thực thông tin thẻ/tài khoản không đúng quá 3 lần.",
+  11: "Đã hết hạn chờ thanh toán. Vui lòng thực hiện lại giao dịch.",
+  12: "Thẻ/Tài khoản của khách hàng bị khóa.",
+  13: "Quý khách nhập sai mật khẩu xác thực giao dịch (OTP).",
+  24: "Khách hàng đã hủy giao dịch.",
+  51: "Tài khoản của quý khách không đủ số dư để thực hiện giao dịch.",
+  65: "Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày.",
+  75: "Ngân hàng thanh toán đang bảo trì.",
+  79: "KH nhập sai mật khẩu thanh toán quá số lần quy định.",
+  99: "Lỗi không xác định. Vui lòng thử lại hoặc liên hệ hỗ trợ.",
   DEFAULT_FAIL: "Giao dịch thất bại hoặc đã xảy ra lỗi xác minh.",
 };
 
@@ -40,9 +40,6 @@ function VnpayPaymentReturnPage() {
   const [message, setMessage] = useState(
     "Đang xác minh giao dịch, vui lòng chờ..."
   );
-  const [countdown, setCountdown] = useState(5);
-  const navigate = useNavigate();
-  const [confettiLauncher, setConfettiLauncher] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -63,7 +60,6 @@ function VnpayPaymentReturnPage() {
           setMessage(vnpMessage);
           sessionStorage.removeItem("currentOrderId");
           sessionStorage.removeItem("currentCourseId");
-          setCountdown(5);
         } else {
           setPaymentStatus(STATUS.FAILED);
           setMessage(vnpMessage);
@@ -86,74 +82,11 @@ function VnpayPaymentReturnPage() {
     }
   }, [location.search]);
 
-  // start countdown and navigate after success
-  useEffect(() => {
-    let timer;
-    if (paymentStatus === STATUS.SUCCESS) {
-      setCountdown((c) => (c ? c : 5));
-      timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            navigate("/student-courses");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [paymentStatus, navigate]);
-
-  // launch confetti when paymentStatus becomes SUCCESS
-  useEffect(() => {
-    let intervalId;
-    let confettiFn;
-
-    if (paymentStatus === STATUS.SUCCESS) {
-      import("canvas-confetti")
-        .then((module) => {
-          confettiFn = module.default || module;
-
-          // fireworks sample provided by user
-          const duration = 15 * 1000;
-          const animationEnd = Date.now() + duration;
-          const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
-
-          function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-          }
-
-          intervalId = setInterval(function () {
-            const timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-              return clearInterval(intervalId);
-            }
-
-            const particleCount = 50 * (timeLeft / duration);
-            // left-ish burst
-            confettiFn({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-            // right-ish burst
-            confettiFn({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-          }, 250);
-        })
-        .catch((e) => console.error("Confetti load error:", e));
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [paymentStatus]);
-
   return (
     <div className="flex justify-center items-center min-h-[50vh] p-4">
            {" "}
       <Card className="w-full max-w-md shadow-lg">
-                {renderPaymentStatus(paymentStatus, message, countdown)}     {" "}
+                {renderPaymentStatus(paymentStatus, message)}     {" "}
       </Card>
          {" "}
     </div>
@@ -162,7 +95,7 @@ function VnpayPaymentReturnPage() {
 
 export default VnpayPaymentReturnPage;
 
-const renderPaymentStatus = (status, msg, countdown = 0) => {
+const renderPaymentStatus = (status, msg) => {
   const isSuccess = status === STATUS.SUCCESS;
   const isFailed = status === STATUS.FAILED || status === STATUS.ERROR;
   const isLoading = status === STATUS.LOADING;
@@ -203,11 +136,6 @@ const renderPaymentStatus = (status, msg, countdown = 0) => {
       </CardHeader>
       <CardContent className="mt-4 p-0">
         <p className="text-gray-700 mb-6 font-medium">{msg}</p>
-        {isSuccess && countdown > 0 && (
-          <p className="text-sm text-gray-500 mb-4">
-            Tự động chuyển hướng đến My Courses trong {countdown}s...
-          </p>
-        )}
 
         <div className="border-t border-gray-200 my-4"></div>
 
